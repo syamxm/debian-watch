@@ -1,0 +1,39 @@
+{{define "content"}}
+<section class="page">
+    <h1 class="pagetitle">host environment</h1>
+    {{with .Data}}
+    <article class="panel">
+        <header class="panelhead">
+            <span class="paneltitle">operating system</span>
+        </header>
+        {{if .Host.Available}}
+        <table class="table">
+            <tbody>
+                <tr><th>hostname</th><td>{{.Host.Hostname}}</td></tr>
+                <tr><th>os</th><td>{{.Host.OS}}</td></tr>
+                <tr><th>platform</th><td>{{.Host.Platform}} {{.Host.PlatformVersion}}</td></tr>
+                <tr><th>kernel</th><td>{{.Host.KernelVersion}}</td></tr>
+                <tr><th>architecture</th><td>{{.Host.KernelArch}}</td></tr>
+                <tr><th>booted</th><td>{{ts .Host.BootTime}}</td></tr>
+                <tr><th>uptime</th><td>{{uptime .Host.Uptime}}</td></tr>
+            </tbody>
+        </table>
+        {{else}}
+        <p class="offline">host metrics unavailable</p>
+        {{end}}
+    </article>
+
+    <article class="panel">
+        <header class="panelhead">
+            <span class="paneltitle">processor</span>
+        </header>
+        <table class="table">
+            <tbody>
+                <tr><th>model</th><td>{{.CPU.Model}}</td></tr>
+                <tr><th>logical cores</th><td>{{if .CPU.Available}}{{.CPU.Cores}}{{else}}n/a{{end}}</td></tr>
+            </tbody>
+        </table>
+    </article>
+    {{end}}
+</section>
+{{end}}

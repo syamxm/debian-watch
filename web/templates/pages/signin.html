@@ -1,0 +1,19 @@
+{{define "content"}}
+<section class="signin">
+    <article class="panel">
+        <header class="panelhead">
+            <span class="paneltitle">debian-watch</span>
+            <span class="panelsub">authentication required</span>
+        </header>
+        {{with .Data.Error}}<p class="error" role="alert">{{.}}</p>{{end}}
+        <form method="POST" action="/signin" class="form">
+            <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+            <label for="username">username</label>
+            <input type="text" id="username" name="username" autocomplete="username" required autofocus>
+            <label for="password">password</label>
+            <input type="password" id="password" name="password" autocomplete="current-password" required>
+            <button type="submit">sign in</button>
+        </form>
+    </article>
+</section>
+{{end}}

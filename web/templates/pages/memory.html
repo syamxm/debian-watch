@@ -1,0 +1,51 @@
+{{define "content"}}
+<section class="page">
+    <h1 class="pagetitle">memory detail</h1>
+    <div id="memory-detail" hx-get="/memory/live" hx-trigger="every 2s" hx-swap="innerHTML">
+        {{template "memory-detail" .Data}}
+    </div>
+</section>
+{{end}}
+
+{{define "memory-detail"}}
+<article class="panel">
+    <header class="panelhead">
+        <span class="paneltitle">virtual memory</span>
+        <span class="panelnum">{{if .Memory.Available}}{{pct .Memory.UsedPercent}}%{{else}}n/a{{end}}</span>
+    </header>
+    {{if .Memory.Available}}
+    <span class="meter"><i data-level="{{level .Memory.UsedPercent}}" style="{{meterStyle .Memory.UsedPercent}}"></i></span>
+    <table class="table">
+        <tbody>
+            <tr><th>total</th><td>{{bytes .Memory.Total}}</td></tr>
+            <tr><th>used</th><td>{{bytes .Memory.Used}}</td></tr>
+            <tr><th>available</th><td>{{bytes .Memory.Free}}</td></tr>
+            <tr><th>cached</th><td>{{bytes .Memory.Cached}}</td></tr>
+            <tr><th>buffers</th><td>{{bytes .Memory.Buffers}}</td></tr>
+        </tbody>
+    </table>
+    {{else}}
+    <p class="offline">memory metrics unavailable</p>
+    {{end}}
+</article>
+
+<article class="panel">
+    <header class="panelhead">
+        <span class="paneltitle">swap</span>
+        <span class="panelnum">{{if .Swap.Available}}{{pct .Swap.UsedPercent}}%{{else}}n/a{{end}}</span>
+    </header>
+    {{if .Swap.Available}}
+    <span class="meter"><i data-level="{{level .Swap.UsedPercent}}" style="{{meterStyle .Swap.UsedPercent}}"></i></span>
+    <table class="table">
+        <tbody>
+            <tr><th>total</th><td>{{bytes .Swap.Total}}</td></tr>
+            <tr><th>used</th><td>{{bytes .Swap.Used}}</td></tr>
+            <tr><th>free</th><td>{{bytes .Swap.Free}}</td></tr>
+        </tbody>
+    </table>
+    {{else}}
+    <p class="offline">swap metrics unavailable</p>
+    {{end}}
+</article>
+<p class="polled">last polled <span>{{ts .Time}}</span></p>
+{{end}}

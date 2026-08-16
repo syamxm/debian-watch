@@ -1,0 +1,86 @@
+{{define "content"}}
+<section class="page">
+    <h1 class="pagetitle">performance overview</h1>
+    <div id="live-stats" hx-get="/api/live-stats" hx-trigger="every 2s" hx-swap="innerHTML">
+        {{template "live-stats" .Data}}
+    </div>
+</section>
+{{end}}
+
+{{define "live-stats"}}
+<div class="grid">
+    <article class="panel">
+        <header class="panelhead">
+            <span class="paneltitle">cpu</span>
+            <span class="panelsub">{{.CPU.Model}}</span>
+            <span class="panelnum">{{if .CPU.Available}}{{pct .CPU.TotalPercent}}%{{else}}n/a{{end}}</span>
+        </header>
+        {{if .CPU.Available}}
+        <span class="meter"><i data-level="{{level .CPU.TotalPercent}}" style="{{meterStyle .CPU.TotalPercent}}"></i></span>
+        <div class="cores">
+            {{range $index, $value := .CPU.PerCore}}
+            <div class="core">
+                <span class="corename">c{{$index}}</span>
+                <span class="meter"><i data-level="{{level $value}}" style="{{meterStyle $value}}"></i></span>
+                <span class="corevalue">{{pct $value}}%</span>
+            </div>
+            {{end}}
+        </div>
+        {{else}}
+        <p class="offline">cpu metrics unavailable</p>
+        {{end}}
+    </article>
+
+    <article class="panel">
+        <header class="panelhead">
+            <span class="paneltitle">memory</span>
+            <span class="panelnum">{{if .Memory.Available}}{{pct .Memory.UsedPercent}}%{{else}}n/a{{end}}</span>
+        </header>
+        {{if .Memory.Available}}
+        <span class="meter"><i data-level="{{level .Memory.UsedPercent}}" style="{{meterStyle .Memory.UsedPercent}}"></i></span>
+        <dl class="readout">
+            <dt>used</dt><dd>{{bytes .Memory.Used}}</dd>
+            <dt>free</dt><dd>{{bytes .Memory.Free}}</dd>
+            <dt>total</dt><dd>{{bytes .Memory.Total}}</dd>
+        </dl>
+        {{else}}
+        <p class="offline">memory metrics unavailable</p>
+        {{end}}
+    </article>
+
+    <article class="panel">
+        <header class="panelhead">
+            <span class="paneltitle">swap</span>
+            <span class="panelnum">{{if .Swap.Available}}{{pct .Swap.UsedPercent}}%{{else}}n/a{{end}}</span>
+        </header>
+        {{if .Swap.Available}}
+        <span class="meter"><i data-level="{{level .Swap.UsedPercent}}" style="{{meterStyle .Swap.UsedPercent}}"></i></span>
+        <dl class="readout">
+            <dt>used</dt><dd>{{bytes .Swap.Used}}</dd>
+            <dt>total</dt><dd>{{bytes .Swap.Total}}</dd>
+        </dl>
+        {{else}}
+        <p class="offline">swap metrics unavailable</p>
+        {{end}}
+    </article>
+
+    <article class="panel">
+        <header class="panelhead">
+            <span class="paneltitle">load / uptime</span>
+        </header>
+        <dl class="readout">
+            {{if .Load.Available}}
+            <dt>1m</dt><dd>{{avg .Load.Load1}}</dd>
+            <dt>5m</dt><dd>{{avg .Load.Load5}}</dd>
+            <dt>15m</dt><dd>{{avg .Load.Load15}}</dd>
+            {{else}}
+            <dt>load</dt><dd>unavailable</dd>
+            {{end}}
+            {{if .Host.Available}}
+            <dt>uptime</dt><dd>{{uptime .Host.Uptime}}</dd>
+            {{end}}
+        </dl>
+    </article>
+</div>
+<p class="polled">last polled <span>{{ts .Time}}</span></p>
+{{end}}

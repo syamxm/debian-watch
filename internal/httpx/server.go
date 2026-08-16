@@ -1,0 +1,80 @@
+// Package httpx wires the routes, middleware and handlers for the dashboard.
+package httpx
+
+import (
+	"log/slog"
+	"net/http"
+
+	"github.com/syamxm/debian-watch/internal/auth"
+	"github.com/syamxm/debian-watch/internal/collect"
+	"github.com/syamxm/debian-watch/internal/config"
+	"github.com/syamxm/debian-watch/web"
+)
+
+type Server struct {
+	cfg       config.Config
+	log       *slog.Logger
+	renderer  *Renderer
+	collector *collect.Collector
+	sessions  *auth.SessionStore
+	limiter   *auth.LoginLimiter
+	creds     auth.Credentials
+}
+
+func NewServer(
+	cfg config.Config,
+	log *slog.Logger,
+	collector *collect.Collector,
+	sessions *auth.SessionStore,
+	limiter *auth.LoginLimiter,
+	creds auth.Credentials,
+) (*Server, error) {
+	renderer, err := NewRenderer(web.Files)
+	if err != nil {
+		return nil, err
+	}
+	return &Server{
+		cfg:       cfg,
+		log:       log,
+		renderer:  renderer,
+		collector: collector,
+		sessions:  sessions,
+		limiter:   limiter,
+		creds:     creds,
+	}, nil
+}
+
+func (s *Server) Handler() http.Handler {
+	mux := http.NewServeMux()
+	protected := auth.RequireSession(s.sessions)
+
+	mux.HandleFunc("GET /{$}", s.handleRoot)
+	mux.HandleFunc("GET /healthz", s.handleHealth)
+	mux.HandleFunc("GET /signin", s.handleSignInForm)
+	mux.HandleFunc("POST /signin", s.handleSignIn)
+	mux.HandleFunc("POST /signout", s.handleSignOut)
+
+	mux.Handle("GET /dashboard", protected(http.HandlerFunc(s.handleDashboard)))
+	mux.Handle("GET /memory", protected(http.HandlerFunc(s.handleMemory)))
+	mux.Handle("GET /memory/live", protected(http.HandlerFunc(s.handleMemoryLive)))
+	mux.Handle("GET /system", protected(http.HandlerFunc(s.handleSystem)))
+	mux.Handle("GET /api/live-stats", protected(http.HandlerFunc(s.handleLiveStats)))
+
+	mux.Handle("GET /static/", staticHandler())
+
+	return chain(mux,
+		recoverPanic(s.log),
+		logRequests(s.log, s.cfg.TrustProxyHeader),
+		securityHeaders,
+		limitBody,
+		auth.CSRF(s.cfg.CookieSecure),
+	)
+}
+
+func staticHandler() http.Handler {
+	fileServer := http.FileServerFS(web.Files)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "public, max-age=3600")
+		fileServer.ServeHTTP(w, r)
+	})
+}
