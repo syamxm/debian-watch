@@ -86,7 +86,39 @@ body{
 .readout dt{color:var(--dim)}
 .readout dd{color:var(--fg);text-align:right;font-variant-numeric:tabular-nums}
 
+.grid .panel.wide{grid-column:1/-1}
+
+.spark{
+  display:block;overflow:hidden;white-space:nowrap;
+  color:var(--accent);font-size:15px;line-height:1.3;letter-spacing:.05em;
+  min-height:1.3em;margin-bottom:8px;
+}
+.sparkpair{display:grid;gap:4px;margin-bottom:12px}
+.sparkpair>div{display:flex;align-items:center;gap:10px}
+.sparklabel{color:var(--dim);font-size:11px;min-width:2ch}
+.sparkpair .spark{margin-bottom:0}
+
+.services{list-style:none;display:grid;gap:2px;margin-top:4px;max-height:260px;overflow-y:auto}
+.service{display:flex;align-items:center;gap:9px;font-size:12.5px;padding:2px 0}
+.servicename{color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.servicestate{margin-left:auto;color:var(--dim);font-size:11.5px;white-space:nowrap}
+.dot{width:7px;height:7px;flex:none;border-radius:50%;background:var(--dim)}
+.dot.good{background:var(--green)}
+.dot.warn{background:var(--yellow)}
+.dot.bad{background:var(--red)}
+
+.temp-cool{color:var(--green)}
+.temp-warm{color:var(--yellow)}
+.temp-hot{color:var(--red)}
+
+.metercell{display:flex;align-items:center;gap:10px;justify-content:flex-end}
+.metercell .meter{width:90px;flex:none}
+
 .table{width:100%;border-collapse:collapse;font-size:13px}
+.table thead th{color:var(--dim);font-size:11px;letter-spacing:.12em;text-transform:uppercase;text-align:right}
+.table thead th:first-child{text-align:left}
+.table td.left{text-align:left}
+.table td.dim{color:var(--dim);font-size:11.5px}
 .table th,.table td{padding:6px 0;text-align:left;border-bottom:1px solid var(--line)}
 .table th{color:var(--dim);font-weight:400}
 .table td{color:var(--fg);text-align:right;font-variant-numeric:tabular-nums}

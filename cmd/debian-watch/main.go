@@ -15,7 +15,9 @@ import (
 	"github.com/syamxm/debian-watch/internal/auth"
 	"github.com/syamxm/debian-watch/internal/collect"
 	"github.com/syamxm/debian-watch/internal/config"
+	"github.com/syamxm/debian-watch/internal/docker"
 	"github.com/syamxm/debian-watch/internal/httpx"
+	"github.com/syamxm/debian-watch/internal/monitor"
 )
 
 const (
@@ -53,7 +55,19 @@ func run() error {
 	go sessions.Sweep(ctx, sweepInterval)
 	go limiter.Sweep(ctx, sweepInterval)
 
-	server, err := httpx.NewServer(cfg, log, collect.New(ctx, log), sessions, limiter, creds)
+	dockerMonitor, err := docker.NewMonitor(cfg.DockerHost, cfg.DockerInterval, log)
+	if err != nil {
+		return err
+	}
+	if !dockerMonitor.Enabled() {
+		log.Info("docker panel disabled", "reason", "DW_DOCKER_HOST is not set")
+	}
+	go dockerMonitor.Run(ctx)
+
+	metrics := monitor.New(collect.New(ctx, log), dockerMonitor, cfg.SampleInterval, cfg.HistorySize, log)
+	go metrics.Run(ctx)
+
+	server, err := httpx.NewServer(cfg, log, metrics, sessions, limiter, creds)
 	if err != nil {
 		return err
 	}

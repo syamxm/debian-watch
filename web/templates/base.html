@@ -13,6 +13,7 @@
     <a class="brand" href="/dashboard">debian-watch</a>
     <nav class="nav" hx-target="#main" hx-swap="innerHTML" hx-push-url="true">
         <a href="/dashboard" hx-get="/dashboard" class="{{if eq .Active "dashboard"}}on{{end}}">dashboard</a>
+        <a href="/docker" hx-get="/docker" class="{{if eq .Active "docker"}}on{{end}}">docker</a>
         <a href="/memory" hx-get="/memory" class="{{if eq .Active "memory"}}on{{end}}">memory</a>
         <a href="/system" hx-get="/system" class="{{if eq .Active "system"}}on{{end}}">system</a>
     </nav>
