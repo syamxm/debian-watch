@@ -8,6 +8,7 @@
 {{end}}
 
 {{define "memory-detail"}}
+{{with .Snapshot}}
 <article class="panel">
     <header class="panelhead">
         <span class="paneltitle">virtual memory</span>
@@ -48,4 +49,5 @@
     {{end}}
 </article>
 <p class="polled">last polled <span>{{ts .Time}}</span></p>
+{{end}}
 {{end}}

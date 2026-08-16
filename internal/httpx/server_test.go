@@ -16,6 +16,8 @@ import (
 	"github.com/syamxm/debian-watch/internal/auth"
 	"github.com/syamxm/debian-watch/internal/collect"
 	"github.com/syamxm/debian-watch/internal/config"
+	"github.com/syamxm/debian-watch/internal/docker"
+	"github.com/syamxm/debian-watch/internal/monitor"
 )
 
 const (
@@ -36,16 +38,27 @@ func newTestHandler(t *testing.T) http.Handler {
 	}
 
 	cfg := config.Config{
-		Addr:         ":0",
-		AdminUser:    testUser,
-		SessionTTL:   time.Hour,
-		CookieSecure: false,
+		Addr:           ":0",
+		AdminUser:      testUser,
+		SessionTTL:     time.Hour,
+		CookieSecure:   false,
+		SampleInterval: time.Second,
+		DockerInterval: 10 * time.Second,
+		HistorySize:    10,
 	}
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
+	ctx := context.Background()
+
+	dockerMonitor, err := docker.NewMonitor("", cfg.DockerInterval, log)
+	if err != nil {
+		t.Fatalf("new docker monitor: %v", err)
+	}
+	metrics := monitor.New(collect.New(ctx, log), dockerMonitor, cfg.SampleInterval, cfg.HistorySize, log)
+	metrics.Sample(ctx)
 
 	server, err := NewServer(
 		cfg, log,
-		collect.New(context.Background(), log),
+		metrics,
 		auth.NewSessionStore(cfg.SessionTTL),
 		auth.NewLoginLimiter(5, 15*time.Minute),
 		creds,
@@ -87,10 +100,22 @@ func postSignIn(t *testing.T, handler http.Handler, username, password string) *
 	return rec
 }
 
+func signInSession(t *testing.T, handler http.Handler) *http.Cookie {
+	t.Helper()
+	rec := postSignIn(t, handler, testUser, testPassword)
+	for _, cookie := range rec.Result().Cookies() {
+		if cookie.Name == auth.SessionCookieName {
+			return cookie
+		}
+	}
+	t.Fatal("sign-in did not return a session cookie")
+	return nil
+}
+
 func TestProtectedRouteRedirectsWithoutSession(t *testing.T) {
 	handler := newTestHandler(t)
 
-	for _, path := range []string{"/dashboard", "/memory", "/system", "/api/live-stats"} {
+	for _, path := range []string{"/dashboard", "/memory", "/system", "/docker", "/docker/live", "/api/live-stats"} {
 		rec := httptest.NewRecorder()
 		handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, path, nil))
 
@@ -178,6 +203,42 @@ func TestSignInGrantsAccess(t *testing.T) {
 	}
 	if !strings.Contains(dashboard.Body.String(), "performance overview") {
 		t.Error("dashboard body missing expected heading")
+	}
+}
+
+func TestDockerPageReportsDisabledPanel(t *testing.T) {
+	handler := newTestHandler(t)
+	session := signInSession(t, handler)
+
+	req := httptest.NewRequest(http.MethodGet, "/docker", nil)
+	req.AddCookie(session)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
+	}
+	if !strings.Contains(rec.Body.String(), "docker panel disabled") {
+		t.Error("expected the disabled-panel message when DW_DOCKER_HOST is unset")
+	}
+}
+
+func TestDashboardRendersHostPanels(t *testing.T) {
+	handler := newTestHandler(t)
+	session := signInSession(t, handler)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/live-stats", nil)
+	req.AddCookie(session)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
+	}
+	for _, panel := range []string{"network", "disks", "temperatures", "services"} {
+		if !strings.Contains(rec.Body.String(), panel) {
+			t.Errorf("live stats missing the %q panel", panel)
+		}
 	}
 }
 

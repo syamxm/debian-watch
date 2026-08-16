@@ -70,10 +70,14 @@ var templateFuncs = template.FuncMap{
 	"pct":        formatPercent,
 	"avg":        formatLoadAverage,
 	"bytes":      formatBytes,
+	"rate":       formatRate,
 	"uptime":     formatUptime,
 	"ts":         formatTimestamp,
+	"temp":       formatTemperature,
 	"level":      usageLevel,
+	"tempLevel":  temperatureLevel,
 	"meterStyle": meterStyle,
+	"sparkline":  sparkline,
 }
 
 func formatPercent(value float64) string {
@@ -122,6 +126,74 @@ func usageLevel(percent float64) string {
 	default:
 		return "cool"
 	}
+}
+
+func formatRate(bytesPerSecond float64) string {
+	if bytesPerSecond < 0 {
+		bytesPerSecond = 0
+	}
+	return formatBytes(uint64(bytesPerSecond)) + "/s"
+}
+
+func formatTemperature(celsius float64) string {
+	return fmt.Sprintf("%.1f°C", celsius)
+}
+
+// temperatureLevel prefers the sensor's own high threshold and falls back to
+// values that suit CPU and NVMe packages when the driver reports none.
+func temperatureLevel(celsius, high float64) string {
+	warn, crit := 65.0, 80.0
+	if high > 0 {
+		warn, crit = high*0.8, high
+	}
+	switch {
+	case celsius >= crit:
+		return "hot"
+	case celsius >= warn:
+		return "warm"
+	default:
+		return "cool"
+	}
+}
+
+const sparklineWidth = 60
+
+var sparklineRunes = []rune("▁▂▃▄▅▆▇█")
+
+// sparkline renders a series as block characters, scaled to its own maximum
+// so a quiet series still shows shape.
+func sparkline(values []float64) string {
+	if len(values) == 0 {
+		return ""
+	}
+	if len(values) > sparklineWidth {
+		values = values[len(values)-sparklineWidth:]
+	}
+
+	max := 0.0
+	for _, value := range values {
+		if value > max {
+			max = value
+		}
+	}
+
+	var builder strings.Builder
+	builder.Grow(len(values) * 3)
+	for _, value := range values {
+		if max <= 0 {
+			builder.WriteRune(sparklineRunes[0])
+			continue
+		}
+		index := int(value / max * float64(len(sparklineRunes)-1))
+		if index < 0 {
+			index = 0
+		}
+		if index >= len(sparklineRunes) {
+			index = len(sparklineRunes) - 1
+		}
+		builder.WriteRune(sparklineRunes[index])
+	}
+	return builder.String()
 }
 
 // meterStyle returns trusted CSS so the custom property survives the

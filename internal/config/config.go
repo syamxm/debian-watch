@@ -18,6 +18,10 @@ type Config struct {
 	CookieSecure     bool
 	TrustProxyHeader bool
 	LogLevel         slog.Level
+	DockerHost       string
+	SampleInterval   time.Duration
+	DockerInterval   time.Duration
+	HistorySize      int
 }
 
 // Load reads configuration from the environment, applying defaults for
@@ -27,10 +31,20 @@ func Load() (Config, error) {
 		Addr:          envString("DW_ADDR", ":8111"),
 		AdminUser:     os.Getenv("DW_ADMIN_USER"),
 		AdminPassHash: os.Getenv("DW_ADMIN_PASS_HASH"),
+		DockerHost:    os.Getenv("DW_DOCKER_HOST"),
 	}
 
 	var err error
 	if cfg.SessionTTL, err = envDuration("DW_SESSION_TTL", 12*time.Hour); err != nil {
+		return Config{}, err
+	}
+	if cfg.SampleInterval, err = envDuration("DW_SAMPLE_INTERVAL", 2*time.Second); err != nil {
+		return Config{}, err
+	}
+	if cfg.DockerInterval, err = envDuration("DW_DOCKER_INTERVAL", 10*time.Second); err != nil {
+		return Config{}, err
+	}
+	if cfg.HistorySize, err = envInt("DW_HISTORY_SIZE", 120); err != nil {
 		return Config{}, err
 	}
 	if cfg.CookieSecure, err = envBool("DW_COOKIE_SECURE", true); err != nil {
@@ -59,6 +73,15 @@ func (c Config) validate() error {
 	if c.SessionTTL <= 0 {
 		return errors.New("DW_SESSION_TTL must be positive")
 	}
+	if c.SampleInterval <= 0 {
+		return errors.New("DW_SAMPLE_INTERVAL must be positive")
+	}
+	if c.DockerInterval <= 0 {
+		return errors.New("DW_DOCKER_INTERVAL must be positive")
+	}
+	if c.HistorySize < 1 {
+		return errors.New("DW_HISTORY_SIZE must be at least 1")
+	}
 	return nil
 }
 
@@ -77,6 +100,18 @@ func envBool(key string, fallback bool) (bool, error) {
 	parsed, err := strconv.ParseBool(v)
 	if err != nil {
 		return false, fmt.Errorf("%s: %w", key, err)
+	}
+	return parsed, nil
+}
+
+func envInt(key string, fallback int) (int, error) {
+	v, ok := os.LookupEnv(key)
+	if !ok || v == "" {
+		return fallback, nil
+	}
+	parsed, err := strconv.Atoi(v)
+	if err != nil {
+		return 0, fmt.Errorf("%s: %w", key, err)
 	}
 	return parsed, nil
 }

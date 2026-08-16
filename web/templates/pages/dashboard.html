@@ -8,17 +8,19 @@
 {{end}}
 
 {{define "live-stats"}}
+{{$snapshot := .Snapshot}}
 <div class="grid">
     <article class="panel">
         <header class="panelhead">
             <span class="paneltitle">cpu</span>
-            <span class="panelsub">{{.CPU.Model}}</span>
-            <span class="panelnum">{{if .CPU.Available}}{{pct .CPU.TotalPercent}}%{{else}}n/a{{end}}</span>
+            <span class="panelsub">{{$snapshot.CPU.Model}}</span>
+            <span class="panelnum">{{if $snapshot.CPU.Available}}{{pct $snapshot.CPU.TotalPercent}}%{{else}}n/a{{end}}</span>
         </header>
-        {{if .CPU.Available}}
-        <span class="meter"><i data-level="{{level .CPU.TotalPercent}}" style="{{meterStyle .CPU.TotalPercent}}"></i></span>
+        {{if $snapshot.CPU.Available}}
+        <div class="spark">{{sparkline .History.CPU}}</div>
+        <span class="meter"><i data-level="{{level $snapshot.CPU.TotalPercent}}" style="{{meterStyle $snapshot.CPU.TotalPercent}}"></i></span>
         <div class="cores">
-            {{range $index, $value := .CPU.PerCore}}
+            {{range $index, $value := $snapshot.CPU.PerCore}}
             <div class="core">
                 <span class="corename">c{{$index}}</span>
                 <span class="meter"><i data-level="{{level $value}}" style="{{meterStyle $value}}"></i></span>
@@ -34,14 +36,15 @@
     <article class="panel">
         <header class="panelhead">
             <span class="paneltitle">memory</span>
-            <span class="panelnum">{{if .Memory.Available}}{{pct .Memory.UsedPercent}}%{{else}}n/a{{end}}</span>
+            <span class="panelnum">{{if $snapshot.Memory.Available}}{{pct $snapshot.Memory.UsedPercent}}%{{else}}n/a{{end}}</span>
         </header>
-        {{if .Memory.Available}}
-        <span class="meter"><i data-level="{{level .Memory.UsedPercent}}" style="{{meterStyle .Memory.UsedPercent}}"></i></span>
+        {{if $snapshot.Memory.Available}}
+        <div class="spark">{{sparkline .History.Memory}}</div>
+        <span class="meter"><i data-level="{{level $snapshot.Memory.UsedPercent}}" style="{{meterStyle $snapshot.Memory.UsedPercent}}"></i></span>
         <dl class="readout">
-            <dt>used</dt><dd>{{bytes .Memory.Used}}</dd>
-            <dt>free</dt><dd>{{bytes .Memory.Free}}</dd>
-            <dt>total</dt><dd>{{bytes .Memory.Total}}</dd>
+            <dt>used</dt><dd>{{bytes $snapshot.Memory.Used}}</dd>
+            <dt>free</dt><dd>{{bytes $snapshot.Memory.Free}}</dd>
+            <dt>total</dt><dd>{{bytes $snapshot.Memory.Total}}</dd>
         </dl>
         {{else}}
         <p class="offline">memory metrics unavailable</p>
@@ -51,13 +54,13 @@
     <article class="panel">
         <header class="panelhead">
             <span class="paneltitle">swap</span>
-            <span class="panelnum">{{if .Swap.Available}}{{pct .Swap.UsedPercent}}%{{else}}n/a{{end}}</span>
+            <span class="panelnum">{{if $snapshot.Swap.Available}}{{pct $snapshot.Swap.UsedPercent}}%{{else}}n/a{{end}}</span>
         </header>
-        {{if .Swap.Available}}
-        <span class="meter"><i data-level="{{level .Swap.UsedPercent}}" style="{{meterStyle .Swap.UsedPercent}}"></i></span>
+        {{if $snapshot.Swap.Available}}
+        <span class="meter"><i data-level="{{level $snapshot.Swap.UsedPercent}}" style="{{meterStyle $snapshot.Swap.UsedPercent}}"></i></span>
         <dl class="readout">
-            <dt>used</dt><dd>{{bytes .Swap.Used}}</dd>
-            <dt>total</dt><dd>{{bytes .Swap.Total}}</dd>
+            <dt>used</dt><dd>{{bytes $snapshot.Swap.Used}}</dd>
+            <dt>total</dt><dd>{{bytes $snapshot.Swap.Total}}</dd>
         </dl>
         {{else}}
         <p class="offline">swap metrics unavailable</p>
@@ -69,18 +72,119 @@
             <span class="paneltitle">load / uptime</span>
         </header>
         <dl class="readout">
-            {{if .Load.Available}}
-            <dt>1m</dt><dd>{{avg .Load.Load1}}</dd>
-            <dt>5m</dt><dd>{{avg .Load.Load5}}</dd>
-            <dt>15m</dt><dd>{{avg .Load.Load15}}</dd>
+            {{if $snapshot.Load.Available}}
+            <dt>1m</dt><dd>{{avg $snapshot.Load.Load1}}</dd>
+            <dt>5m</dt><dd>{{avg $snapshot.Load.Load5}}</dd>
+            <dt>15m</dt><dd>{{avg $snapshot.Load.Load15}}</dd>
             {{else}}
             <dt>load</dt><dd>unavailable</dd>
             {{end}}
-            {{if .Host.Available}}
-            <dt>uptime</dt><dd>{{uptime .Host.Uptime}}</dd>
+            {{if $snapshot.Host.Available}}
+            <dt>uptime</dt><dd>{{uptime $snapshot.Host.Uptime}}</dd>
             {{end}}
         </dl>
     </article>
+
+    <article class="panel wide">
+        <header class="panelhead">
+            <span class="paneltitle">network</span>
+            {{if $snapshot.Network.Available}}
+            <span class="panelnum">↓{{rate $snapshot.Network.TotalRx}} ↑{{rate $snapshot.Network.TotalTx}}</span>
+            {{end}}
+        </header>
+        {{if $snapshot.Network.Available}}
+        <div class="sparkpair">
+            <div><span class="sparklabel">rx</span><span class="spark">{{sparkline .History.NetRx}}</span></div>
+            <div><span class="sparklabel">tx</span><span class="spark">{{sparkline .History.NetTx}}</span></div>
+        </div>
+        <table class="table">
+            <thead><tr><th>interface</th><th>rx/s</th><th>tx/s</th><th>total rx</th><th>total tx</th></tr></thead>
+            <tbody>
+                {{range $snapshot.Network.Interfaces}}
+                <tr>
+                    <th>{{.Name}}</th>
+                    <td>{{rate .RxPerSec}}</td>
+                    <td>{{rate .TxPerSec}}</td>
+                    <td>{{bytes .BytesRecv}}</td>
+                    <td>{{bytes .BytesSent}}</td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+        {{else}}
+        <p class="offline">network metrics unavailable</p>
+        {{end}}
+    </article>
+
+    <article class="panel wide">
+        <header class="panelhead">
+            <span class="paneltitle">disks</span>
+        </header>
+        {{if $snapshot.Disks}}
+        <table class="table">
+            <thead><tr><th>mount</th><th>device</th><th>used</th><th>total</th><th>usage</th></tr></thead>
+            <tbody>
+                {{range $snapshot.Disks}}
+                <tr>
+                    <th>{{.Mountpoint}}</th>
+                    <td class="left">{{.Device}}</td>
+                    <td>{{bytes .Used}}</td>
+                    <td>{{bytes .Total}}</td>
+                    <td class="metercell">
+                        <span class="meter"><i data-level="{{level .UsedPercent}}" style="{{meterStyle .UsedPercent}}"></i></span>
+                        <span>{{pct .UsedPercent}}%</span>
+                    </td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+        {{else}}
+        <p class="offline">no mounted filesystems reported</p>
+        {{end}}
+    </article>
+
+    <article class="panel">
+        <header class="panelhead">
+            <span class="paneltitle">temperatures</span>
+        </header>
+        {{if $snapshot.Temperatures.Available}}
+        <dl class="readout">
+            {{range $snapshot.Temperatures.Sensors}}
+            <dt>{{.Label}}</dt><dd class="temp-{{tempLevel .Celsius .High}}">{{temp .Celsius}}</dd>
+            {{end}}
+        </dl>
+        {{else}}
+        <p class="offline">no temperature sensors readable</p>
+        {{end}}
+    </article>
+
+    <article class="panel">
+        <header class="panelhead">
+            <span class="paneltitle">services</span>
+            {{if and .Docker.Enabled .Docker.Available}}
+            <span class="panelnum">{{.Docker.RunningCount}}/{{len .Docker.Containers}}</span>
+            {{end}}
+        </header>
+        {{template "service-summary" .Docker}}
+    </article>
 </div>
-<p class="polled">last polled <span>{{ts .Time}}</span></p>
+<p class="polled">last polled <span>{{ts $snapshot.Time}}</span></p>
+{{end}}
+
+{{define "service-summary"}}
+{{if not .Enabled}}
+<p class="offline">docker panel disabled — DW_DOCKER_HOST is not set</p>
+{{else if not .Available}}
+<p class="offline">docker socket proxy unreachable</p>
+{{else}}
+<ul class="services">
+    {{range .Containers}}
+    <li class="service">
+        <span class="dot {{if .Running}}{{if eq .Health "unhealthy"}}bad{{else if eq .Health "starting"}}warn{{else}}good{{end}}{{else}}bad{{end}}"></span>
+        <span class="servicename">{{.Name}}</span>
+        <span class="servicestate">{{.State}}{{with .Health}} · {{.}}{{end}}</span>
+    </li>
+    {{end}}
+</ul>
+{{end}}
 {{end}}

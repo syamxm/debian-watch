@@ -81,23 +81,31 @@ func (s *Server) handleSignOut(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
-	s.renderPage(w, r, "dashboard", "performance overview", s.collector.Snapshot(r.Context()))
+	s.renderPage(w, r, "dashboard", "performance overview", s.monitor.View())
 }
 
 func (s *Server) handleMemory(w http.ResponseWriter, r *http.Request) {
-	s.renderPage(w, r, "memory", "memory detail", s.collector.Snapshot(r.Context()))
+	s.renderPage(w, r, "memory", "memory detail", s.monitor.View())
 }
 
 func (s *Server) handleSystem(w http.ResponseWriter, r *http.Request) {
-	s.renderPage(w, r, "system", "host environment", s.collector.Snapshot(r.Context()))
+	s.renderPage(w, r, "system", "host environment", s.monitor.View())
+}
+
+func (s *Server) handleDocker(w http.ResponseWriter, r *http.Request) {
+	s.renderPage(w, r, "docker", "containers", s.monitor.View())
 }
 
 func (s *Server) handleLiveStats(w http.ResponseWriter, r *http.Request) {
-	s.renderBlock(w, r, "dashboard", "live-stats", s.collector.Snapshot(r.Context()))
+	s.renderBlock(w, r, "dashboard", "live-stats", s.monitor.View())
 }
 
 func (s *Server) handleMemoryLive(w http.ResponseWriter, r *http.Request) {
-	s.renderBlock(w, r, "memory", "memory-detail", s.collector.Snapshot(r.Context()))
+	s.renderBlock(w, r, "memory", "memory-detail", s.monitor.View())
+}
+
+func (s *Server) handleDockerLive(w http.ResponseWriter, r *http.Request) {
+	s.renderBlock(w, r, "docker", "docker-detail", s.monitor.View())
 }
 
 // renderPage serves the content block alone to HTMX navigations and the full
