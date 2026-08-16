@@ -1,0 +1,30 @@
+{{define "base"}}<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{.Title}} · debian-watch</title>
+    <link rel="stylesheet" href="/static/css/app.css">
+    <script src="/static/js/htmx.min.js" defer></script>
+</head>
+<body>
+{{if .ShowNav}}
+<header class="topbar">
+    <a class="brand" href="/dashboard">debian-watch</a>
+    <nav class="nav" hx-target="#main" hx-swap="innerHTML" hx-push-url="true">
+        <a href="/dashboard" hx-get="/dashboard" class="{{if eq .Active "dashboard"}}on{{end}}">dashboard</a>
+        <a href="/memory" hx-get="/memory" class="{{if eq .Active "memory"}}on{{end}}">memory</a>
+        <a href="/system" hx-get="/system" class="{{if eq .Active "system"}}on{{end}}">system</a>
+    </nav>
+    <form class="signout" method="POST" action="/signout">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <button type="submit">sign out</button>
+    </form>
+</header>
+{{end}}
+<main id="main" class="shell">
+    {{template "content" .}}
+</main>
+</body>
+</html>
+{{end}}
