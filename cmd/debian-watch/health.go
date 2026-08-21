@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/http"
@@ -12,9 +13,15 @@ import (
 const healthTimeout = 3 * time.Second
 
 func runHealthCheck(addr string) error {
-	client := &http.Client{Timeout: healthTimeout}
+	ctx, cancel := context.WithTimeout(context.Background(), healthTimeout)
+	defer cancel()
 
-	resp, err := client.Get("http://" + healthTarget(addr) + "/healthz")
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://"+healthTarget(addr)+"/healthz", nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
 	}
