@@ -37,8 +37,6 @@ func (c *Collector) collectCPU(ctx context.Context) CPU {
 	}
 }
 
-// primeCPU discards one sample of each series so subsequent non-blocking
-// calls measure the interval since this point.
 func primeCPU(ctx context.Context) {
 	_, _ = cpu.PercentWithContext(ctx, 0, false)
 	_, _ = cpu.PercentWithContext(ctx, 0, true)

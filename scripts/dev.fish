@@ -1,6 +1,4 @@
 #!/usr/bin/env fish
-# Load .env into the environment and run the server locally.
-# Values are taken literally, so do not quote them in .env.
 
 set -l root (dirname (status --current-filename))/..
 set -l envfile $root/.env

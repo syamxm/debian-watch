@@ -2,6 +2,9 @@ package collect
 
 import (
 	"context"
+	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/shirou/gopsutil/v4/host"
@@ -35,7 +38,7 @@ func (c *Collector) collectHost(ctx context.Context) Host {
 	}
 	return Host{
 		Available:       true,
-		Hostname:        info.Hostname,
+		Hostname:        c.hostname(info.Hostname),
 		OS:              info.OS,
 		Platform:        info.Platform,
 		PlatformVersion: info.PlatformVersion,
@@ -44,6 +47,21 @@ func (c *Collector) collectHost(ctx context.Context) Host {
 		Uptime:          time.Duration(info.Uptime) * time.Second,
 		BootTime:        time.Unix(int64(info.BootTime), 0),
 	}
+}
+
+func (c *Collector) hostname(fallback string) string {
+	if c.hostRoot == "" {
+		return fallback
+	}
+	data, err := os.ReadFile(filepath.Join(c.hostRoot, "etc", "hostname"))
+	if err != nil {
+		c.log.Warn("host hostname unreadable", "error", err)
+		return fallback
+	}
+	if name := strings.TrimSpace(string(data)); name != "" {
+		return name
+	}
+	return fallback
 }
 
 func (c *Collector) collectLoad(ctx context.Context) Load {

@@ -1,4 +1,3 @@
-// Package config loads and validates runtime configuration from the environment.
 package config
 
 import (
@@ -8,6 +7,8 @@ import (
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/syamxm/debian-watch/internal/collect"
 )
 
 type Config struct {
@@ -19,19 +20,21 @@ type Config struct {
 	TrustProxyHeader bool
 	LogLevel         slog.Level
 	DockerHost       string
+	HostRoot         string
+	NetDevPath       string
 	SampleInterval   time.Duration
 	DockerInterval   time.Duration
 	HistorySize      int
 }
 
-// Load reads configuration from the environment, applying defaults for
-// everything except the admin credentials, which have no safe default.
 func Load() (Config, error) {
 	cfg := Config{
 		Addr:          envString("DW_ADDR", ":8111"),
 		AdminUser:     os.Getenv("DW_ADMIN_USER"),
 		AdminPassHash: os.Getenv("DW_ADMIN_PASS_HASH"),
 		DockerHost:    os.Getenv("DW_DOCKER_HOST"),
+		HostRoot:      os.Getenv("DW_HOST_ROOT"),
+		NetDevPath:    envString("DW_HOST_NET_DEV", collect.DefaultNetDevPath),
 	}
 
 	var err error

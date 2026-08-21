@@ -21,8 +21,6 @@ type Sensor struct {
 	High    float64
 }
 
-// sensorLabels maps hwmon driver names to what the hardware actually is.
-// Order matters: the first matching prefix wins.
 var sensorLabels = []struct{ prefix, label string }{
 	{"k10temp", "CPU"},
 	{"zenpower", "CPU"},
@@ -82,9 +80,6 @@ func (c *Collector) collectTemperatures(ctx context.Context) Temperatures {
 	return temps
 }
 
-// redundantSensor drops probes that duplicate a headline reading. NVMe drives
-// expose per-die sensors alongside Composite, which is the figure every other
-// tool reports.
 func redundantSensor(sensorKey string) bool {
 	return strings.HasPrefix(sensorKey, "nvme_sensor_")
 }
@@ -99,8 +94,6 @@ func friendlySensorLabel(sensorKey string) string {
 	return sensorKey
 }
 
-// numberDuplicates disambiguates hardware that reports the same friendly name,
-// such as two NVMe drives, so the panel does not show identical rows.
 func numberDuplicates(list []Sensor) {
 	counts := make(map[string]int, len(list))
 	for _, sensor := range list {

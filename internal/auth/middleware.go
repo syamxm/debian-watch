@@ -2,9 +2,6 @@ package auth
 
 import "net/http"
 
-// RequireSession rejects unauthenticated requests. HTMX requests get an
-// HX-Redirect header, since a 303 to the sign-in page would otherwise be
-// swapped into the panel it was polling.
 func RequireSession(store *SessionStore) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

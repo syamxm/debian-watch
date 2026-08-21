@@ -26,8 +26,6 @@ type Container struct {
 
 func (c Container) Running() bool { return c.State == "running" }
 
-// State is the result of one refresh cycle. Enabled is false when no Docker
-// host is configured, which disables the panel rather than reporting an error.
 type State struct {
 	Enabled    bool
 	Available  bool
@@ -35,9 +33,6 @@ type State struct {
 	UpdatedAt  time.Time
 }
 
-// Pending reports the window between startup and the first completed refresh,
-// which on a host with dozens of containers takes several seconds. Without it
-// a slow first collection is indistinguishable from an unreachable proxy.
 func (s State) Pending() bool {
 	return s.Enabled && s.UpdatedAt.IsZero()
 }
@@ -61,8 +56,6 @@ type Monitor struct {
 	state State
 }
 
-// NewMonitor returns a disabled monitor when host is empty, so a homeserver
-// without the socket proxy still runs every other panel.
 func NewMonitor(host string, interval time.Duration, log *slog.Logger) (*Monitor, error) {
 	if host == "" {
 		return &Monitor{log: log, interval: interval}, nil
@@ -177,8 +170,6 @@ func containerName(names []string) string {
 	return strings.TrimPrefix(names[0], "/")
 }
 
-// parseHealth reads the health suffix Docker appends to the status text, for
-// example "Up 3 days (healthy)".
 func parseHealth(status string) string {
 	switch {
 	case strings.Contains(status, "(healthy)"):
@@ -192,9 +183,6 @@ func parseHealth(status string) string {
 	}
 }
 
-// uptimeFrom parses the "Up 3 days" form of the status text. Docker reports
-// container age here as human text, so precision below the printed unit is
-// not recoverable.
 func uptimeFrom(status string) time.Duration {
 	if !strings.HasPrefix(status, "Up ") {
 		return 0

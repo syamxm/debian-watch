@@ -1,0 +1,42 @@
+services:
+  debian-watch:
+    build: .
+    image: debian-watch:latest
+    container_name: debian-watch
+    restart: unless-stopped
+
+    env_file:
+      - .env
+    environment:
+      DW_ADDR: ":8111"
+      DW_DOCKER_HOST: "http://docker-gate:2375"
+      DW_COOKIE_SECURE: "true"
+      DW_TRUST_PROXY_HEADER: "true"
+      DW_HOST_ROOT: "/host"
+      DW_HOST_NET_DEV: "/hostnet/dev"
+      DW_SAMPLE_INTERVAL: "2s"
+      DW_DOCKER_INTERVAL: "10s"
+      DW_LOG_LEVEL: "info"
+
+    volumes:
+      - /:/host:ro,rslave
+      - /proc/1/net:/hostnet:ro
+
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 128m
+    pids_limit: 64
+
+    networks:
+      - proxy-net
+      - monitoring
+
+networks:
+  proxy-net:
+    external: true
+  monitoring:
+    external: true
+    name: homeserver-dashboard_monitoring

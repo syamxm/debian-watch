@@ -1,5 +1,3 @@
-// Keeps the status bar in step with HTMX: the active nav pill follows the
-// swapped page, and the connection pill reports polling state.
 (function () {
   const WAITING_DELAY_MS = 600;
 
@@ -36,8 +34,6 @@
       }
     }
 
-    // A 2s poll that answers in milliseconds should not flash the pill. Only a
-    // request still outstanding after WAITING_DELAY_MS is worth reporting.
     document.body.addEventListener("htmx:beforeRequest", function () {
       pending++;
       if (waitingTimer !== null || indicator.dataset.state === "offline") return;

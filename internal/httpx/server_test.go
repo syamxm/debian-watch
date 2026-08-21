@@ -53,7 +53,7 @@ func newTestHandler(t *testing.T) http.Handler {
 	if err != nil {
 		t.Fatalf("new docker monitor: %v", err)
 	}
-	metrics := monitor.New(collect.New(ctx, log), dockerMonitor, cfg.SampleInterval, cfg.HistorySize, log)
+	metrics := monitor.New(collect.New(ctx, log, "", ""), dockerMonitor, cfg.SampleInterval, cfg.HistorySize, log)
 	metrics.Sample(ctx)
 
 	server, err := NewServer(

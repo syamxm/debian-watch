@@ -1,4 +1,3 @@
-// Package httpx wires the routes, middleware and handlers for the dashboard.
 package httpx
 
 import (
