@@ -19,8 +19,6 @@ func NewCredentials(username, passwordHash string) (Credentials, error) {
 	return Credentials{username: username, passwordHash: []byte(passwordHash)}, nil
 }
 
-// Verify always runs the bcrypt comparison so a wrong username costs the same
-// as a wrong password and cannot be distinguished by response timing.
 func (c Credentials) Verify(username, password string) bool {
 	userMatch := subtle.ConstantTimeCompare([]byte(username), []byte(c.username)) == 1
 	passMatch := bcrypt.CompareHashAndPassword(c.passwordHash, []byte(password)) == nil

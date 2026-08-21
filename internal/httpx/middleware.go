@@ -79,8 +79,6 @@ func (s *statusRecorder) WriteHeader(status int) {
 	s.ResponseWriter.WriteHeader(status)
 }
 
-// ClientIP trusts proxy headers only when the deployment says it sits behind
-// one; otherwise the headers are attacker-controlled and are ignored.
 func ClientIP(r *http.Request, trustProxy bool) string {
 	if trustProxy {
 		if ip := r.Header.Get("X-Real-IP"); ip != "" {

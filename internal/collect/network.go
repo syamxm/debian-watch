@@ -1,13 +1,16 @@
 package collect
 
 import (
+	"bufio"
 	"context"
+	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
-
-	"github.com/shirou/gopsutil/v4/net"
 )
+
+const DefaultNetDevPath = "/proc/net/dev"
 
 type Network struct {
 	Available  bool
@@ -24,34 +27,32 @@ type Interface struct {
 	TxPerSec  float64
 }
 
+type netCounter struct {
+	bytesRecv uint64
+	bytesSent uint64
+}
+
 type netSample struct {
-	counters map[string]net.IOCountersStat
+	counters map[string]netCounter
 	taken    time.Time
 }
 
-func (c *Collector) collectNetwork(ctx context.Context) Network {
-	counters, err := net.IOCountersWithContext(ctx, true)
+func (c *Collector) collectNetwork(_ context.Context) Network {
+	counters, err := readNetDev(c.netDevPath)
 	if err != nil {
 		c.unavailable("network", err)
 		return Network{}
 	}
 
 	now := time.Now()
-	current := netSample{counters: make(map[string]net.IOCountersStat, len(counters)), taken: now}
 	network := Network{Available: true}
-
-	for _, counter := range counters {
-		if skipInterface(counter.Name) {
-			continue
-		}
-		current.counters[counter.Name] = counter
-
+	for name, counter := range counters {
 		iface := Interface{
-			Name:      counter.Name,
-			BytesRecv: counter.BytesRecv,
-			BytesSent: counter.BytesSent,
+			Name:      name,
+			BytesRecv: counter.bytesRecv,
+			BytesSent: counter.bytesSent,
 		}
-		if rx, tx, ok := c.rates(counter, now); ok {
+		if rx, tx, ok := c.rates(name, counter, now); ok {
 			iface.RxPerSec = rx
 			iface.TxPerSec = tx
 			network.TotalRx += rx
@@ -60,18 +61,15 @@ func (c *Collector) collectNetwork(ctx context.Context) Network {
 		network.Interfaces = append(network.Interfaces, iface)
 	}
 
-	c.lastNet = current
+	c.lastNet = netSample{counters: counters, taken: now}
 	sort.Slice(network.Interfaces, func(a, b int) bool {
 		return network.Interfaces[a].Name < network.Interfaces[b].Name
 	})
 	return network
 }
 
-// rates converts cumulative counters into per-second throughput using the
-// previous sample. Counter resets, which happen when an interface is
-// recreated, are reported as zero rather than a spike.
-func (c *Collector) rates(counter net.IOCountersStat, now time.Time) (rx, tx float64, ok bool) {
-	previous, exists := c.lastNet.counters[counter.Name]
+func (c *Collector) rates(name string, counter netCounter, now time.Time) (rx, tx float64, ok bool) {
+	previous, exists := c.lastNet.counters[name]
 	if !exists {
 		return 0, 0, false
 	}
@@ -79,16 +77,50 @@ func (c *Collector) rates(counter net.IOCountersStat, now time.Time) (rx, tx flo
 	if elapsed <= 0 {
 		return 0, 0, false
 	}
-	if counter.BytesRecv < previous.BytesRecv || counter.BytesSent < previous.BytesSent {
+	if counter.bytesRecv < previous.bytesRecv || counter.bytesSent < previous.bytesSent {
 		return 0, 0, false
 	}
-	rx = float64(counter.BytesRecv-previous.BytesRecv) / elapsed
-	tx = float64(counter.BytesSent-previous.BytesSent) / elapsed
-	return rx, tx, true
+	return float64(counter.bytesRecv-previous.bytesRecv) / elapsed,
+		float64(counter.bytesSent-previous.bytesSent) / elapsed,
+		true
 }
 
-// skipInterface drops the loopback and the per-container veth pairs, which on
-// a host running dozens of containers would otherwise dominate the list.
+func readNetDev(path string) (map[string]netCounter, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	counters := make(map[string]netCounter)
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		name, values, ok := strings.Cut(scanner.Text(), ":")
+		if !ok {
+			continue
+		}
+		name = strings.TrimSpace(name)
+		if skipInterface(name) {
+			continue
+		}
+
+		fields := strings.Fields(values)
+		if len(fields) < 9 {
+			continue
+		}
+		bytesRecv, err := strconv.ParseUint(fields[0], 10, 64)
+		if err != nil {
+			continue
+		}
+		bytesSent, err := strconv.ParseUint(fields[8], 10, 64)
+		if err != nil {
+			continue
+		}
+		counters[name] = netCounter{bytesRecv: bytesRecv, bytesSent: bytesSent}
+	}
+	return counters, scanner.Err()
+}
+
 func skipInterface(name string) bool {
 	if name == "lo" {
 		return true

@@ -11,8 +11,6 @@ import (
 	"time"
 )
 
-// Renderer holds one template set per page, each built from the shared base
-// plus that page's own blocks.
 type Renderer struct {
 	pages map[string]*template.Template
 }
@@ -47,8 +45,6 @@ func (r *Renderer) Block(w http.ResponseWriter, status int, page, block string, 
 	return r.execute(w, status, page, block, data)
 }
 
-// execute renders into a buffer first so a template failure never emits a
-// partially written response with a success status.
 func (r *Renderer) execute(w http.ResponseWriter, status int, page, block string, data any) error {
 	tmpl, ok := r.pages[page]
 	if !ok {
@@ -103,9 +99,6 @@ func formatBytes(value uint64) string {
 	return fmt.Sprintf("%.1f %s", size, units[index])
 }
 
-// formatUptime drops trailing zero units, because Docker reports container age
-// as coarse text ("Up 13 days") and "13d 0h 0m" implies precision that the
-// source does not have.
 func formatUptime(d time.Duration) string {
 	days := int(d.Hours()) / 24
 	hours := int(d.Hours()) % 24
@@ -150,8 +143,6 @@ func formatTemperature(celsius float64) string {
 	return fmt.Sprintf("%.1f°C", celsius)
 }
 
-// temperatureLevel prefers the sensor's own high threshold and falls back to
-// values that suit CPU and NVMe packages when the driver reports none.
 func temperatureLevel(celsius, high float64) string {
 	warn, crit := 65.0, 80.0
 	if high > 0 {
@@ -171,8 +162,6 @@ const sparklineWidth = 60
 
 var sparklineRunes = []rune("▁▂▃▄▅▆▇█")
 
-// sparkline renders a series as block characters, scaled to its own maximum
-// so a quiet series still shows shape.
 func sparkline(values []float64) string {
 	if len(values) == 0 {
 		return ""
@@ -207,8 +196,6 @@ func sparkline(values []float64) string {
 	return builder.String()
 }
 
-// meterStyle returns trusted CSS so the custom property survives the
-// html/template style sanitiser.
 func meterStyle(percent float64) template.CSS {
 	ratio := percent / 100
 	if ratio < 0 {

@@ -15,9 +15,6 @@ type contextKey struct{}
 
 var csrfContextKey contextKey
 
-// CSRF implements the double-submit cookie pattern: the token is stored in a
-// same-site cookie and echoed in a hidden form field, which a cross-site form
-// post cannot read or forge.
 func CSRF(secure bool) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -43,8 +40,6 @@ func CSRFToken(ctx context.Context) string {
 	return token
 }
 
-// RotateCSRFToken issues a fresh token, which callers do after a successful
-// login so a token fixed before authentication cannot be reused after it.
 func RotateCSRFToken(w http.ResponseWriter, secure bool) error {
 	token, err := randomToken()
 	if err != nil {

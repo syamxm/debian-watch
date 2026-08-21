@@ -2,6 +2,7 @@ package collect
 
 import (
 	"context"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -18,8 +19,6 @@ type Disk struct {
 	UsedPercent float64
 }
 
-// pseudoFilesystems never represent real storage, so listing them would bury
-// the handful of mounts that matter on a homeserver.
 var pseudoFilesystems = map[string]bool{
 	"autofs":          true,
 	"binfmt_misc":     true,
@@ -59,7 +58,7 @@ func (c *Collector) collectDisks(ctx context.Context) []Disk {
 		if skipMount(partition.Fstype, partition.Mountpoint) {
 			continue
 		}
-		usage, err := disk.UsageWithContext(ctx, partition.Mountpoint)
+		usage, err := disk.UsageWithContext(ctx, filepath.Join(c.hostRoot, partition.Mountpoint))
 		if err != nil || usage.Total == 0 {
 			continue
 		}

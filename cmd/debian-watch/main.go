@@ -1,9 +1,9 @@
-// Command debian-watch serves the system monitoring dashboard.
 package main
 
 import (
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -28,6 +28,17 @@ const (
 )
 
 func main() {
+	health := flag.Bool("health", false, "probe the local /healthz endpoint and exit")
+	flag.Parse()
+
+	if *health {
+		if err := runHealthCheck(envAddr()); err != nil {
+			fmt.Fprintln(os.Stderr, "health check failed:", err)
+			os.Exit(1)
+		}
+		return
+	}
+
 	if err := run(); err != nil {
 		fmt.Fprintln(os.Stderr, "startup failed:", err)
 		os.Exit(1)
@@ -41,6 +52,10 @@ func run() error {
 	}
 
 	log := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: cfg.LogLevel}))
+
+	if err := useHostFilesystem(cfg.HostRoot); err != nil {
+		return err
+	}
 
 	creds, err := auth.NewCredentials(cfg.AdminUser, cfg.AdminPassHash)
 	if err != nil {
@@ -64,7 +79,7 @@ func run() error {
 	}
 	go dockerMonitor.Run(ctx)
 
-	metrics := monitor.New(collect.New(ctx, log), dockerMonitor, cfg.SampleInterval, cfg.HistorySize, log)
+	metrics := monitor.New(collect.New(ctx, log, cfg.HostRoot, cfg.NetDevPath), dockerMonitor, cfg.SampleInterval, cfg.HistorySize, log)
 	go metrics.Run(ctx)
 
 	server, err := httpx.NewServer(cfg, log, metrics, sessions, limiter, creds)

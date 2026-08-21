@@ -68,7 +68,6 @@ func TestCPUPercent(t *testing.T) {
 	stats.PreCPU.Usage.Total = 100
 	stats.PreCPU.SystemUsage = 1000
 
-	// 100/200 of one sampling window across 4 cores.
 	if got := stats.cpuPercent(); got != 200 {
 		t.Errorf("cpuPercent() = %v, want 200", got)
 	}

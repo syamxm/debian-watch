@@ -1,6 +1,3 @@
-// Package monitor samples the host on a fixed interval and serves the latest
-// result to every request. Collection cost is therefore independent of how
-// many browsers are polling.
 package monitor
 
 import (
@@ -61,8 +58,6 @@ func New(
 	}
 }
 
-// Run samples until the context is cancelled. It takes one sample immediately
-// so the first page load has data.
 func (m *Monitor) Run(ctx context.Context) {
 	m.Sample(ctx)
 	ticker := time.NewTicker(m.interval)
@@ -94,7 +89,6 @@ func (m *Monitor) View() View {
 	}
 }
 
-// Sample takes one reading and appends it to the history series.
 func (m *Monitor) Sample(ctx context.Context) {
 	snapshot := m.collector.Snapshot(ctx)
 

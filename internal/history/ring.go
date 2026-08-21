@@ -1,5 +1,3 @@
-// Package history keeps a short in-memory series per metric so panels can
-// draw a trend. Nothing is persisted; a restart starts the series over.
 package history
 
 import "sync"
@@ -29,7 +27,6 @@ func (r *Ring) Add(value float64) {
 	}
 }
 
-// Values returns a copy ordered oldest to newest.
 func (r *Ring) Values() []float64 {
 	r.mu.RLock()
 	defer r.mu.RUnlock()

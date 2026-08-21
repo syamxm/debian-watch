@@ -8,9 +8,6 @@ import (
 	"net/http"
 )
 
-// assetVersion hashes the embedded static files so their URLs change whenever
-// their content does. Without it a browser can serve a stale stylesheet from
-// cache for the whole max-age window after a deploy.
 func assetVersion(fsys fs.FS) (string, error) {
 	digest := sha256.New()
 
@@ -36,8 +33,6 @@ func assetVersion(fsys fs.FS) (string, error) {
 	return hex.EncodeToString(digest.Sum(nil))[:12], nil
 }
 
-// staticHandler serves versioned URLs as immutable and unversioned ones with a
-// short lifetime, so a stale asset can never outlive one deploy.
 func staticHandler(fsys fs.FS, version string) http.Handler {
 	fileServer := http.FileServerFS(fsys)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

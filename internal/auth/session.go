@@ -1,5 +1,3 @@
-// Package auth provides single-user credential checks, in-memory sessions,
-// CSRF protection and the middleware that guards the dashboard routes.
 package auth
 
 import (
@@ -13,8 +11,6 @@ import (
 
 const SessionCookieName = "dw_session"
 
-// SessionStore keeps sessions in memory only. A restart invalidates every
-// session, which is acceptable for a single-user dashboard.
 type SessionStore struct {
 	mu       sync.Mutex
 	ttl      time.Duration

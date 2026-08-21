@@ -6,8 +6,6 @@ import (
 	"time"
 )
 
-// LoginLimiter is a fixed-window failure counter keyed by client IP. Only
-// failed attempts count, so a working login is never throttled.
 type LoginLimiter struct {
 	mu      sync.Mutex
 	max     int

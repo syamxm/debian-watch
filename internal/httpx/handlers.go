@@ -109,8 +109,6 @@ func (s *Server) handleDockerLive(w http.ResponseWriter, r *http.Request) {
 	s.renderBlock(w, r, "docker", "docker-detail", s.monitor.View())
 }
 
-// renderPage serves the content block alone to HTMX navigations and the full
-// document to ordinary requests.
 func (s *Server) renderPage(w http.ResponseWriter, r *http.Request, page, title string, data any) {
 	view := pageData{
 		Title:     title,

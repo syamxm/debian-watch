@@ -1,6 +1,3 @@
-// Package docker talks to a read-only Docker socket proxy over HTTP. Only the
-// two endpoints the dashboard needs are implemented, which keeps the
-// dependency surface at the standard library.
 package docker
 
 import (
@@ -20,8 +17,6 @@ type Client struct {
 	http    *http.Client
 }
 
-// NewClient accepts an http(s) URL pointing at the socket proxy. The raw
-// Docker socket is deliberately not supported.
 func NewClient(host string) (*Client, error) {
 	parsed, err := url.Parse(host)
 	if err != nil {
@@ -36,10 +31,6 @@ func NewClient(host string) (*Client, error) {
 	}, nil
 }
 
-func (c *Client) Ping(ctx context.Context) error {
-	return c.get(ctx, "/_ping", nil)
-}
-
 func (c *Client) Containers(ctx context.Context) ([]containerSummary, error) {
 	var summaries []containerSummary
 	if err := c.get(ctx, "/containers/json?all=1", &summaries); err != nil {
@@ -50,8 +41,6 @@ func (c *Client) Containers(ctx context.Context) ([]containerSummary, error) {
 
 func (c *Client) Stats(ctx context.Context, id string) (statsResponse, error) {
 	var stats statsResponse
-	// one-shot is deliberately not used: it zeroes precpu_stats, which would
-	// make every CPU figure an average since container start.
 	path := "/containers/" + url.PathEscape(id) + "/stats?stream=false"
 	if err := c.get(ctx, path, &stats); err != nil {
 		return statsResponse{}, err
@@ -110,8 +99,6 @@ type statsResponse struct {
 	} `json:"memory_stats"`
 }
 
-// cpuPercent mirrors the calculation docker stats performs: the container's
-// share of total CPU time over the sampling window, scaled by core count.
 func (s statsResponse) cpuPercent() float64 {
 	if s.PreCPU.SystemUsage == 0 {
 		return 0
@@ -128,8 +115,6 @@ func (s statsResponse) cpuPercent() float64 {
 	return cpuDelta / systemDelta * cores * 100
 }
 
-// memoryUsage subtracts the page cache the way the docker CLI does, so the
-// figure matches what `docker stats` reports.
 func (s statsResponse) memoryUsage() uint64 {
 	usage := s.Memory.Usage
 	if inactive, ok := s.Memory.Stats["inactive_file"]; ok && inactive < usage {

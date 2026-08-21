@@ -1,6 +1,3 @@
-// Package collect gathers host metrics. Every metric group degrades
-// independently: an unavailable data source marks its group unavailable
-// instead of failing the whole snapshot.
 package collect
 
 import (
@@ -21,18 +18,19 @@ type Snapshot struct {
 	Temperatures Temperatures
 }
 
-// Collector keeps the previous network sample to derive throughput, so it is
-// not safe for concurrent use. The monitor calls it from a single goroutine.
 type Collector struct {
-	log      *slog.Logger
-	cpuModel string
-	lastNet  netSample
+	log        *slog.Logger
+	cpuModel   string
+	hostRoot   string
+	netDevPath string
+	lastNet    netSample
 }
 
-// New primes the CPU sampler so the first snapshot reports a real delta
-// rather than usage since boot.
-func New(ctx context.Context, log *slog.Logger) *Collector {
-	c := &Collector{log: log}
+func New(ctx context.Context, log *slog.Logger, hostRoot, netDevPath string) *Collector {
+	if netDevPath == "" {
+		netDevPath = DefaultNetDevPath
+	}
+	c := &Collector{log: log, hostRoot: hostRoot, netDevPath: netDevPath}
 	c.cpuModel = readCPUModel(ctx, log)
 	primeCPU(ctx)
 	return c
