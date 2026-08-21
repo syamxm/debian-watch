@@ -62,6 +62,21 @@ func TestMonitorDisabledWithoutHost(t *testing.T) {
 	}
 }
 
+func TestStatePendingBeforeFirstRefresh(t *testing.T) {
+	monitor, err := NewMonitor("http://127.0.0.1:1", time.Second, discardLogger())
+	if err != nil {
+		t.Fatalf("new monitor: %v", err)
+	}
+	if !monitor.State().Pending() {
+		t.Fatal("state should be pending until the first refresh completes")
+	}
+
+	monitor.refresh(context.Background())
+	if monitor.State().Pending() {
+		t.Fatal("state should not be pending once a refresh has run, even a failed one")
+	}
+}
+
 func TestMonitorMarksUnavailableWhenProxyFails(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)

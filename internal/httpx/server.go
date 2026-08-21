@@ -13,6 +13,7 @@ import (
 
 type Server struct {
 	cfg      config.Config
+	assetVer string
 	log      *slog.Logger
 	renderer *Renderer
 	monitor  *monitor.Monitor
@@ -33,8 +34,13 @@ func NewServer(
 	if err != nil {
 		return nil, err
 	}
+	version, err := assetVersion(web.Files)
+	if err != nil {
+		return nil, err
+	}
 	return &Server{
 		cfg:      cfg,
+		assetVer: version,
 		log:      log,
 		renderer: renderer,
 		monitor:  metrics,
@@ -62,7 +68,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("GET /docker/live", protected(http.HandlerFunc(s.handleDockerLive)))
 	mux.Handle("GET /api/live-stats", protected(http.HandlerFunc(s.handleLiveStats)))
 
-	mux.Handle("GET /static/", staticHandler())
+	mux.Handle("GET /static/", staticHandler(web.Files, s.assetVer))
 
 	return chain(mux,
 		recoverPanic(s.log),
@@ -71,12 +77,4 @@ func (s *Server) Handler() http.Handler {
 		limitBody,
 		auth.CSRF(s.cfg.CookieSecure),
 	)
-}
-
-func staticHandler() http.Handler {
-	fileServer := http.FileServerFS(web.Files)
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Cache-Control", "public, max-age=3600")
-		fileServer.ServeHTTP(w, r)
-	})
 }

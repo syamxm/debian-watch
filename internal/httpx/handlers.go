@@ -11,6 +11,7 @@ type pageData struct {
 	Active    string
 	ShowNav   bool
 	CSRFToken string
+	AssetVer  string
 	Data      any
 }
 
@@ -116,6 +117,7 @@ func (s *Server) renderPage(w http.ResponseWriter, r *http.Request, page, title 
 		Active:    page,
 		ShowNav:   true,
 		CSRFToken: auth.CSRFToken(r.Context()),
+		AssetVer:  s.assetVer,
 		Data:      data,
 	}
 
@@ -141,6 +143,7 @@ func (s *Server) renderSignIn(w http.ResponseWriter, r *http.Request, status int
 		Title:     "sign in",
 		Active:    "signin",
 		CSRFToken: auth.CSRFToken(r.Context()),
+		AssetVer:  s.assetVer,
 		Data:      signInView{Error: message},
 	}
 	if err := s.renderer.Page(w, status, "signin", view); err != nil {

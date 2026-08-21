@@ -35,6 +35,13 @@ type State struct {
 	UpdatedAt  time.Time
 }
 
+// Pending reports the window between startup and the first completed refresh,
+// which on a host with dozens of containers takes several seconds. Without it
+// a slow first collection is indistinguishable from an unreachable proxy.
+func (s State) Pending() bool {
+	return s.Enabled && s.UpdatedAt.IsZero()
+}
+
 func (s State) RunningCount() int {
 	count := 0
 	for _, container := range s.Containers {

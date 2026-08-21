@@ -1,6 +1,10 @@
 {{define "content"}}
 <section class="page">
-    <h1 class="pagetitle">host environment</h1>
+    <h1 class="sechead">
+        <span class="prompt"><span class="tick">❯</span> debian-watch</span>
+        <span class="cmd">uname</span> <span class="arg">-a</span>
+        <span class="note">host environment</span>
+    </h1>
     {{with .Data.Snapshot}}
     <article class="panel">
         <header class="panelhead">

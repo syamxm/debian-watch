@@ -103,14 +103,25 @@ func formatBytes(value uint64) string {
 	return fmt.Sprintf("%.1f %s", size, units[index])
 }
 
+// formatUptime drops trailing zero units, because Docker reports container age
+// as coarse text ("Up 13 days") and "13d 0h 0m" implies precision that the
+// source does not have.
 func formatUptime(d time.Duration) string {
 	days := int(d.Hours()) / 24
 	hours := int(d.Hours()) % 24
 	minutes := int(d.Minutes()) % 60
+
+	parts := make([]string, 0, 3)
 	if days > 0 {
-		return fmt.Sprintf("%dd %dh %dm", days, hours, minutes)
+		parts = append(parts, fmt.Sprintf("%dd", days))
 	}
-	return fmt.Sprintf("%dh %dm", hours, minutes)
+	if hours > 0 || (days > 0 && minutes > 0) {
+		parts = append(parts, fmt.Sprintf("%dh", hours))
+	}
+	if minutes > 0 || len(parts) == 0 {
+		parts = append(parts, fmt.Sprintf("%dm", minutes))
+	}
+	return strings.Join(parts, " ")
 }
 
 func formatTimestamp(t time.Time) string {
