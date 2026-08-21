@@ -3,27 +3,35 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
     <title>{{.Title}} · debian-watch</title>
-    <link rel="stylesheet" href="/static/css/app.css">
-    <script src="/static/js/htmx.min.js" defer></script>
+    <link rel="preload" href="/static/fonts/JetBrainsMono-Regular.woff2?v={{.AssetVer}}" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="/static/css/app.css?v={{.AssetVer}}">
+    <script src="/static/js/htmx.min.js?v={{.AssetVer}}" defer></script>
+    <script src="/static/js/status.js?v={{.AssetVer}}" defer></script>
 </head>
 <body>
 {{if .ShowNav}}
+<a class="skiplink" href="#main">skip to content</a>
 <header class="topbar">
-    <a class="brand" href="/dashboard">debian-watch</a>
-    <nav class="nav" hx-target="#main" hx-swap="innerHTML" hx-push-url="true">
-        <a href="/dashboard" hx-get="/dashboard" class="{{if eq .Active "dashboard"}}on{{end}}">dashboard</a>
-        <a href="/docker" hx-get="/docker" class="{{if eq .Active "docker"}}on{{end}}">docker</a>
-        <a href="/memory" hx-get="/memory" class="{{if eq .Active "memory"}}on{{end}}">memory</a>
-        <a href="/system" hx-get="/system" class="{{if eq .Active "system"}}on{{end}}">system</a>
+    <a class="brand" href="/dashboard">◆ debian-watch</a>
+    <nav class="nav" aria-label="sections" hx-target="#main" hx-swap="innerHTML show:window:top" hx-push-url="true">
+        <a href="/dashboard" hx-get="/dashboard" class="{{if eq .Active "dashboard"}}on{{end}}"{{if eq .Active "dashboard"}} aria-current="page"{{end}}><span class="num">1</span>dashboard</a>
+        <a href="/docker" hx-get="/docker" class="{{if eq .Active "docker"}}on{{end}}"{{if eq .Active "docker"}} aria-current="page"{{end}}><span class="num">2</span>docker</a>
+        <a href="/memory" hx-get="/memory" class="{{if eq .Active "memory"}}on{{end}}"{{if eq .Active "memory"}} aria-current="page"{{end}}><span class="num">3</span>memory</a>
+        <a href="/system" hx-get="/system" class="{{if eq .Active "system"}}on{{end}}"{{if eq .Active "system"}} aria-current="page"{{end}}><span class="num">4</span>system</a>
     </nav>
-    <form class="signout" method="POST" action="/signout">
-        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
-        <button type="submit">sign out</button>
-    </form>
+    <div class="barright">
+        <div class="conn" id="conn" data-state="live" role="status" aria-live="polite" title="connection state"><span>live</span></div>
+        <form class="signout" method="POST" action="/signout">
+            <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+            <button type="submit">exit</button>
+        </form>
+    </div>
+    <div class="scrollprogress" aria-hidden="true"></div>
 </header>
 {{end}}
-<main id="main" class="shell">
+<main id="main" class="shell" tabindex="-1">
     {{template "content" .}}
 </main>
 </body>

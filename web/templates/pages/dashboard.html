@@ -1,6 +1,10 @@
 {{define "content"}}
 <section class="page">
-    <h1 class="pagetitle">performance overview</h1>
+    <h1 class="sechead">
+        <span class="prompt"><span class="tick">❯</span> debian-watch</span>
+        <span class="cmd">stats</span> <span class="arg">--live</span>
+        <span class="note">host metrics · 2s</span>
+    </h1>
     <div id="live-stats" hx-get="/api/live-stats" hx-trigger="every 2s" hx-swap="innerHTML">
         {{template "live-stats" .Data}}
     </div>
@@ -97,20 +101,22 @@
             <div><span class="sparklabel">rx</span><span class="spark">{{sparkline .History.NetRx}}</span></div>
             <div><span class="sparklabel">tx</span><span class="spark">{{sparkline .History.NetTx}}</span></div>
         </div>
-        <table class="table">
-            <thead><tr><th>interface</th><th>rx/s</th><th>tx/s</th><th>total rx</th><th>total tx</th></tr></thead>
-            <tbody>
-                {{range $snapshot.Network.Interfaces}}
-                <tr>
-                    <th>{{.Name}}</th>
-                    <td>{{rate .RxPerSec}}</td>
-                    <td>{{rate .TxPerSec}}</td>
-                    <td>{{bytes .BytesRecv}}</td>
-                    <td>{{bytes .BytesSent}}</td>
-                </tr>
-                {{end}}
-            </tbody>
-        </table>
+        <div class="tablewrap">
+            <table class="table">
+                <thead><tr><th>interface</th><th>rx/s</th><th>tx/s</th><th>total rx</th><th>total tx</th></tr></thead>
+                <tbody>
+                    {{range $snapshot.Network.Interfaces}}
+                    <tr>
+                        <th>{{.Name}}</th>
+                        <td>{{rate .RxPerSec}}</td>
+                        <td>{{rate .TxPerSec}}</td>
+                        <td>{{bytes .BytesRecv}}</td>
+                        <td>{{bytes .BytesSent}}</td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </div>
         {{else}}
         <p class="offline">network metrics unavailable</p>
         {{end}}
@@ -121,23 +127,25 @@
             <span class="paneltitle">disks</span>
         </header>
         {{if $snapshot.Disks}}
-        <table class="table">
-            <thead><tr><th>mount</th><th>device</th><th>used</th><th>total</th><th>usage</th></tr></thead>
-            <tbody>
-                {{range $snapshot.Disks}}
-                <tr>
-                    <th>{{.Mountpoint}}</th>
-                    <td class="left">{{.Device}}</td>
-                    <td>{{bytes .Used}}</td>
-                    <td>{{bytes .Total}}</td>
-                    <td class="metercell">
-                        <span class="meter"><i data-level="{{level .UsedPercent}}" style="{{meterStyle .UsedPercent}}"></i></span>
-                        <span>{{pct .UsedPercent}}%</span>
-                    </td>
-                </tr>
-                {{end}}
-            </tbody>
-        </table>
+        <div class="tablewrap">
+            <table class="table">
+                <thead><tr><th>mount</th><th>device</th><th>used</th><th>total</th><th>usage</th></tr></thead>
+                <tbody>
+                    {{range $snapshot.Disks}}
+                    <tr>
+                        <th>{{.Mountpoint}}</th>
+                        <td class="left dim">{{.Device}}</td>
+                        <td>{{bytes .Used}}</td>
+                        <td>{{bytes .Total}}</td>
+                        <td class="metercell">
+                            <span class="meter"><i data-level="{{level .UsedPercent}}" style="{{meterStyle .UsedPercent}}"></i></span>
+                            <span>{{pct .UsedPercent}}%</span>
+                        </td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </div>
         {{else}}
         <p class="offline">no mounted filesystems reported</p>
         {{end}}
@@ -148,9 +156,10 @@
             <span class="paneltitle">temperatures</span>
         </header>
         {{if $snapshot.Temperatures.Available}}
-        <dl class="readout">
+        <dl class="readout temps">
             {{range $snapshot.Temperatures.Sensors}}
-            <dt>{{.Label}}</dt><dd class="temp-{{tempLevel .Celsius .High}}">{{temp .Celsius}}</dd>
+            <dt>{{.Label}}<span class="sensorkey">{{.Detail}}</span></dt>
+            <dd class="temp-{{tempLevel .Celsius .High}}">{{temp .Celsius}}</dd>
             {{end}}
         </dl>
         {{else}}
@@ -174,6 +183,8 @@
 {{define "service-summary"}}
 {{if not .Enabled}}
 <p class="offline">docker panel disabled — DW_DOCKER_HOST is not set</p>
+{{else if .Pending}}
+<p class="offline">collecting container stats…</p>
 {{else if not .Available}}
 <p class="offline">docker socket proxy unreachable</p>
 {{else}}

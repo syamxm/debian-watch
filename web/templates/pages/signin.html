@@ -2,9 +2,10 @@
 <section class="signin">
     <article class="panel">
         <header class="panelhead">
-            <span class="paneltitle">debian-watch</span>
+            <span class="paneltitle">◆ debian-watch</span>
             <span class="panelsub">authentication required</span>
         </header>
+        <p class="prompt"><span class="tick">❯</span> <span class="cmd">login</span></p>
         {{with .Data.Error}}<p class="error" role="alert">{{.}}</p>{{end}}
         <form method="POST" action="/signin" class="form">
             <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">

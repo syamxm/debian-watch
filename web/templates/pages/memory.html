@@ -1,6 +1,10 @@
 {{define "content"}}
 <section class="page">
-    <h1 class="pagetitle">memory detail</h1>
+    <h1 class="sechead">
+        <span class="prompt"><span class="tick">❯</span> debian-watch</span>
+        <span class="cmd">free</span> <span class="arg">-h</span>
+        <span class="note">memory detail · 2s</span>
+    </h1>
     <div id="memory-detail" hx-get="/memory/live" hx-trigger="every 2s" hx-swap="innerHTML">
         {{template "memory-detail" .Data}}
     </div>

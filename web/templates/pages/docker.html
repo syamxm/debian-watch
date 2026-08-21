@@ -1,6 +1,10 @@
 {{define "content"}}
 <section class="page">
-    <h1 class="pagetitle">containers</h1>
+    <h1 class="sechead">
+        <span class="prompt"><span class="tick">❯</span> debian-watch</span>
+        <span class="cmd">docker</span> <span class="arg">ps</span>
+        <span class="note">containers · 10s</span>
+    </h1>
     <div id="docker-detail" hx-get="/docker/live" hx-trigger="every 10s" hx-swap="innerHTML">
         {{template "docker-detail" .Data}}
     </div>
@@ -20,31 +24,35 @@
 
     {{if not $docker.Enabled}}
     <p class="offline">docker panel disabled — set DW_DOCKER_HOST to the read-only socket proxy to enable it</p>
+    {{else if $docker.Pending}}
+    <p class="offline">collecting container stats…</p>
     {{else if not $docker.Available}}
     <p class="offline">docker socket proxy unreachable — every other panel keeps working</p>
     {{else if not $docker.Containers}}
     <p class="offline">no containers reported</p>
     {{else}}
-    <table class="table">
-        <thead>
-            <tr><th>name</th><th>image</th><th>state</th><th>uptime</th><th>cpu</th><th>memory</th></tr>
-        </thead>
-        <tbody>
-            {{range $docker.Containers}}
-            <tr>
-                <th>
-                    <span class="dot {{if .Running}}{{if eq .Health "unhealthy"}}bad{{else if eq .Health "starting"}}warn{{else}}good{{end}}{{else}}bad{{end}}"></span>
-                    {{.Name}}
-                </th>
-                <td class="left dim">{{.Image}}</td>
-                <td class="left">{{.State}}{{with .Health}} · {{.}}{{end}}</td>
-                <td>{{if .Running}}{{uptime .Uptime}}{{else}}—{{end}}</td>
-                <td>{{if .StatsOK}}{{pct .CPUPercent}}%{{else}}—{{end}}</td>
-                <td>{{if .StatsOK}}{{bytes .MemoryUsage}}{{else}}—{{end}}</td>
-            </tr>
-            {{end}}
-        </tbody>
-    </table>
+    <div class="tablewrap">
+        <table class="table">
+            <thead>
+                <tr><th>name</th><th>image</th><th>state</th><th>uptime</th><th>cpu</th><th>memory</th></tr>
+            </thead>
+            <tbody>
+                {{range $docker.Containers}}
+                <tr>
+                    <th>
+                        <span class="dot {{if .Running}}{{if eq .Health "unhealthy"}}bad{{else if eq .Health "starting"}}warn{{else}}good{{end}}{{else}}bad{{end}}"></span>
+                        {{.Name}}
+                    </th>
+                    <td class="left dim">{{.Image}}</td>
+                    <td class="left">{{.State}}{{with .Health}} · {{.}}{{end}}</td>
+                    <td>{{if .Running}}{{uptime .Uptime}}{{else}}—{{end}}</td>
+                    <td>{{if .StatsOK}}{{pct .CPUPercent}}%{{else}}—{{end}}</td>
+                    <td>{{if .StatsOK}}{{bytes .MemoryUsage}}{{else}}—{{end}}</td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </div>
     {{end}}
 </article>
 {{end}}

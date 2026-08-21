@@ -28,6 +28,10 @@ func TestFormatUptime(t *testing.T) {
 		90 * time.Minute:              "1h 30m",
 		49*time.Hour + 5*time.Minute:  "2d 1h 5m",
 		2*time.Hour + 121*time.Minute: "4h 1m",
+		13 * 24 * time.Hour:           "13d",
+		25 * time.Hour:                "1d 1h",
+		0:                             "0m",
+		30 * time.Second:              "0m",
 	}
 	for input, want := range cases {
 		if got := formatUptime(input); got != want {
