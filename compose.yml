@@ -1,7 +1,7 @@
 services:
   debian-watch:
     build: .
-    image: debian-watch:latest
+    image: ghcr.io/syamxm/debian-watch:${IMAGE_TAG:-latest}
     container_name: debian-watch
     restart: unless-stopped
 

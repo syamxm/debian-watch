@@ -136,6 +136,56 @@ TLS terminates at Cloudflare; nginx listens on plain port 80 inside
 `proxy-net`, which is why `DW_COOKIE_SECURE=true` is correct in production even
 though the app itself speaks HTTP.
 
+## CI/CD
+
+Three workflows, all actions pinned to commit SHAs, all jobs starting from
+`permissions: contents: read`.
+
+`ci.yml` runs on pushes to `main` and on pull requests: `gofmt`, `go vet`,
+`golangci-lint`, `go test -race` with coverage, `govulncheck`, CodeQL, Gitleaks,
+and a Docker build scanned by Trivy. CodeQL and Trivy upload SARIF to the
+Security tab.
+
+`release.yml` runs on `v*` tags: re-runs vet and tests, then builds and pushes
+to `ghcr.io/syamxm/debian-watch` using the built-in `GITHUB_TOKEN`, and scans
+the pushed digest with Trivy.
+
+`deploy.yml` runs on pushes to `main` and on manual dispatch, gated on
+`vars.DEPLOY_ENABLED == 'true'`. Until that variable exists the job is skipped,
+so the workflow is inert as committed. It joins the tailnet with a Tailscale
+OAuth client, SSHes to the homeserver, resets to `origin/main`, rebuilds with
+compose and waits for the container to report healthy.
+
+### Repository settings for deploy
+
+Nothing below is needed for `ci.yml` or `release.yml`, which use only the
+built-in `GITHUB_TOKEN`.
+
+Variable (Settings -> Secrets and variables -> Actions -> Variables):
+
+| Variable | Purpose |
+| --- | --- |
+| `DEPLOY_ENABLED` | Set to `true` to arm the deploy job. Anything else skips it |
+
+Secrets:
+
+| Secret | Purpose |
+| --- | --- |
+| `TS_OAUTH_CLIENT_ID` | Tailscale OAuth client id, so the runner can reach the homeserver over the tailnet |
+| `TS_OAUTH_SECRET` | Tailscale OAuth client secret |
+| `DEPLOY_HOST` | Homeserver address on the tailnet |
+| `DEPLOY_USER` | SSH user for the deploy |
+| `DEPLOY_SSH_KEY` | Private key of a deploy-only SSH keypair |
+| `DEPLOY_PORT` | SSH port |
+
+The Tailscale OAuth client needs the `auth_keys` write scope and a
+`tag:ci` tag, and `tag:ci` must be allowed to reach the homeserver in the
+tailnet ACL. The deploy job runs in the `production` environment, so adding a
+required reviewer there gates every deployment behind an approval.
+
+The server builds the image from the checked-out source. `release.yml` still
+publishes to GHCR on tags, which gives you a tagged artifact to roll back to.
+
 ## Security
 
 - Single admin account, bcrypt hash from the environment, never a plaintext password

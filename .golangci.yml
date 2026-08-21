@@ -1,0 +1,52 @@
+version: "2"
+
+run:
+  timeout: 5m
+
+linters:
+  default: standard
+  enable:
+    - bodyclose
+    - errorlint
+    - gosec
+    - misspell
+    - noctx
+    - revive
+    - unconvert
+    - whitespace
+  settings:
+    errcheck:
+      exclude-functions:
+        - (io.Closer).Close
+        - (io.ReadCloser).Close
+        - (*os.File).Close
+        - (io/fs.File).Close
+    revive:
+      rules:
+        - name: exported
+          disabled: true
+        - name: package-comments
+          disabled: true
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - bodyclose
+          - gosec
+          - noctx
+      - path: internal/auth/(session|csrf)\.go
+        linters: [gosec]
+        text: "G124"
+      - path: internal/collect/host\.go
+        linters: [gosec]
+        text: "G115"
+      - path: internal/collect/network\.go
+        linters: [gosec]
+        text: "G304"
+      - path: internal/httpx/render\.go
+        linters: [gosec]
+        text: "G203"
+
+formatters:
+  enable:
+    - gofmt
